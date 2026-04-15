@@ -21,10 +21,6 @@ media/
 __pycache__/
 local_settings.py
 
-# YOLO models (large files)
-yolo_models/*.pt
-*.pt
-
 # IDE
 .vscode/
 .idea/
