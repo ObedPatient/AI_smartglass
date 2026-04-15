@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.py[cod]
+*.pyo
+db.sqlite3
+yolo_models/*.pt
+media/
+staticfiles/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.DS_Store
+*.log

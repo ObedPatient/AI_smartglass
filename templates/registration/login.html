@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SmartGlass — Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#00FF9C;--bg:#07090F;--surface:#0D1017;--surface2:#131820;--border:rgba(255,255,255,0.07);--text:#E2E8F0;--muted:#556070;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.mono{font-family:'Space Mono',monospace;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,255,156,.025)1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,255,156,.025)1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;}
+input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:10px 12px;font-size:13px;outline:none;transition:border .15s;}
+input:focus{border-color:rgba(0,255,156,.4);}
+input::placeholder{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="relative z-10 w-full max-w-sm px-4">
+  <!-- Logo -->
+  <div class="text-center mb-8">
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+         style="background:rgba(0,255,156,.12);border:1px solid rgba(0,255,156,.25)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00FF9C" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+      </svg>
+    </div>
+    <div class="mono font-bold text-xl" style="color:var(--accent)">SmartGlass</div>
+    <div class="text-xs mt-1" style="color:var(--muted)">AI Navigation Dashboard</div>
+  </div>
+
+  <!-- Card -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px">
+    <div class="text-sm font-medium mb-5">Sign in to your account</div>
+
+    {% if messages %}
+      {% for message in messages %}
+      <div class="text-xs px-3 py-2 rounded-lg mb-4"
+           style="background:rgba(239,68,68,.1);color:#F87171;border:1px solid rgba(239,68,68,.2)">
+        {{ message }}
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="text-xs mb-1.5 block" style="color:var(--muted)">Username</label>
+        <input type="text" name="username" placeholder="Enter username" required autofocus>
+      </div>
+      <div>
+        <label class="text-xs mb-1.5 block" style="color:var(--muted)">Password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      <button type="submit" class="w-full mono text-sm py-2.5 rounded-lg font-bold transition-all"
+        style="background:rgba(0,255,156,.12);color:var(--accent);border:1px solid rgba(0,255,156,.25)">
+        Sign In →
+      </button>
+    </form>
+
+    <div class="mt-4 pt-4 text-xs text-center" style="border-top:1px solid var(--border);color:var(--muted)">
+      No account? Run: <span class="mono" style="color:var(--accent)">python manage.py createsuperuser</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

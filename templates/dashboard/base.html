@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}SmartGlass{% endblock %} — AI Navigation</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:#00FF9C; --accent2:#FF3366;
+  --bg:#07090F; --surface:#0D1017; --surface2:#131820; --surface3:#1A2130;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.10);
+  --text:#E2E8F0; --muted:#556070; --muted2:#3A4455;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.mono{font-family:'Space Mono',monospace;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,255,156,.025)1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,255,156,.025)1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden;}
+.card2{background:var(--surface2);border:1px solid var(--border);border-radius:10px;}
+.card3{background:var(--surface3);border:1px solid var(--border);border-radius:8px;}
+.pill{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;font-family:'Space Mono',monospace;}
+.sev-1{background:rgba(85,96,112,.25);color:#94A3B8;border:1px solid rgba(85,96,112,.4);}
+.sev-2{background:rgba(234,179,8,.12);color:#FACC15;border:1px solid rgba(234,179,8,.3);}
+.sev-3{background:rgba(249,115,22,.12);color:#FB923C;border:1px solid rgba(249,115,22,.3);}
+.sev-4{background:rgba(239,68,68,.14);color:#F87171;border:1px solid rgba(239,68,68,.3);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes slide-down{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse-crit{0%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}70%{box-shadow:0 0 0 14px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.blink{animation:blink 1.3s ease-in-out infinite;}
+.slide-down{animation:slide-down .25s ease forwards;}
+.pulse-crit{animation:pulse-crit .9s infinite;}
+.fade-in{animation:fade-in .4s ease forwards;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px;}
+nav{position:fixed;top:0;left:0;right:0;z-index:50;height:56px;
+  background:rgba(7,9,15,.9);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);display:flex;align-items:center;
+  justify-content:space-between;padding:0 20px;}
+.nav-link{font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid transparent;transition:all .15s;color:var(--muted);text-decoration:none;}
+.nav-link:hover{color:var(--text);border-color:var(--border2);}
+.nav-link.active{color:var(--accent);background:rgba(0,255,156,.08);border-color:rgba(0,255,156,.2);}
+.prog-track{height:3px;border-radius:4px;background:var(--surface3);overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+.bar-green::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);border-radius:14px 14px 0 0;}
+.bar-red::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent2);border-radius:14px 14px 0 0;}
+.bar-yellow::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#FACC15;border-radius:14px 14px 0 0;}
+.bar-blue::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#60A5FA;border-radius:14px 14px 0 0;}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);padding:8px 10px;text-align:left;
+  border-bottom:1px solid var(--border);white-space:nowrap;}
+.data-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:rgba(255,255,255,.015);}
+.agent-box{background:linear-gradient(135deg,rgba(0,255,156,.05),rgba(0,255,156,.02));
+  border:1px solid rgba(0,255,156,.18);border-radius:10px;}
+.feed-item{border-left:2px solid var(--border);padding-left:12px;position:relative;}
+.feed-item::before{content:'';position:absolute;left:-5px;top:7px;
+  width:8px;height:8px;border-radius:50%;background:var(--muted2);}
+.feed-item.sev4::before{background:#F87171;}
+.feed-item.sev3::before{background:#FB923C;}
+.feed-item.sev2::before{background:#FACC15;}
+.feed-item.clear::before{background:var(--accent);}
+{% block extra_style %}{% endblock %}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="relative">
+
+<!-- NAV -->
+<nav>
+  <div class="flex items-center gap-3">
+    <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+         style="background:rgba(0,255,156,.12);border:1px solid rgba(0,255,156,.25)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="#00FF9C" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+      </svg>
+    </div>
+    <span class="mono font-bold text-sm" style="color:var(--accent)">SmartGlass</span>
+    <span class="pill" style="background:rgba(0,255,156,.08);color:var(--accent);border:1px solid rgba(0,255,156,.18)">AI Nav</span>
+  </div>
+
+  <div class="flex items-center gap-1">
+    <a href="/" class="nav-link {% block nav_live %}{% endblock %}">Live</a>
+    <a href="/log/" class="nav-link {% block nav_log %}{% endblock %}">Log</a>
+    <a href="/report/" class="nav-link {% block nav_report %}{% endblock %}">Report</a>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div id="status-dot" class="w-2 h-2 rounded-full blink" style="background:var(--muted)"></div>
+      <span id="status-text" class="text-xs" style="color:var(--muted)">Connecting…</span>
+    </div>
+    <div class="mono text-xs" style="color:var(--muted2)" id="clock">--:--:--</div>
+    <span class="text-xs" style="color:var(--muted)">{{ request.user.username }}</span>
+    <a href="/accounts/logout/" class="mono text-xs px-3 py-1.5 rounded-lg"
+       style="background:rgba(239,68,68,.08);color:#F87171;border:1px solid rgba(239,68,68,.2)">
+      Logout
+    </a>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="relative z-10 pt-[68px] pb-10 px-4 md:px-5 max-w-[1600px] mx-auto">
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+setInterval(()=>{
+  document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8);
+},1000);
+
+async function checkHealth(){
+  try{
+    const r = await fetch('/api/health/');
+    const ok = r.ok;
+    document.getElementById('status-dot').style.background = ok ? 'var(--accent)' : '#F87171';
+    document.getElementById('status-text').textContent = ok ? 'Server online' : 'Server offline';
+  } catch {
+    document.getElementById('status-dot').style.background = '#F87171';
+    document.getElementById('status-text').textContent = 'Server offline';
+  }
+}
+checkHealth();
+setInterval(checkHealth, 12000);
+
+function sevBadge(s){
+  const L={1:'LOW',2:'MED',3:'HIGH',4:'CRIT'};
+  return `<span class="pill sev-${s}">${L[s]||'?'}</span>`;
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

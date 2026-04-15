@@ -1,0 +1,211 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Report{% endblock %}
+{% block nav_report %}active{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <div class="text-lg font-medium">Behavior Analysis Report</div>
+    <div class="text-xs mt-0.5" style="color:var(--muted)">Movement patterns and caregiver insights from detection
+      history</div>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="loadReport()" class="mono text-xs px-4 py-2 rounded-lg"
+      style="background:rgba(0,255,156,.1);color:var(--accent);border:1px solid rgba(0,255,156,.25)">
+      Refresh Report
+    </button>
+    <button onclick="exportReport()" class="mono text-xs px-4 py-2 rounded-lg"
+      style="background:rgba(96,165,250,.08);color:#60A5FA;border:1px solid rgba(96,165,250,.2)">
+      Export JSON
+    </button>
+
+    <!-- Add this button to your existing report.html button group -->
+    <button onclick="downloadPDF()" class="mono text-xs px-4 py-2 rounded-lg"
+      style="background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.2)">
+      Download PDF
+    </button>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+  <div class="card bar-green p-4">
+    <div class="text-xs mb-2" style="color:var(--muted)">TOTAL DETECTIONS</div>
+    <div class="mono text-3xl font-bold mb-1" style="color:var(--accent)" id="r-total">--</div>
+    <div class="text-xs" style="color:var(--muted2)">in analysis window</div>
+  </div>
+  <div class="card bar-blue p-4">
+    <div class="text-xs mb-2" style="color:var(--muted)">UNIQUE OBJECTS</div>
+    <div class="mono text-3xl font-bold mb-1" style="color:#60A5FA" id="r-unique">--</div>
+    <div class="text-xs" style="color:var(--muted2)">distinct classes</div>
+  </div>
+  <div class="card bar-yellow p-4">
+    <div class="text-xs mb-2" style="color:var(--muted)">RISK SCORE</div>
+    <div class="mono text-3xl font-bold mb-1" style="color:#FACC15" id="r-risk">--</div>
+    <div class="text-xs" style="color:var(--muted2)" id="r-risk-label">calculating…</div>
+  </div>
+  <div class="card bar-red p-4">
+    <div class="text-xs mb-2" style="color:var(--muted)">HIGH RISK HOURS</div>
+    <div class="mono text-3xl font-bold mb-1" style="color:#F87171" id="r-hrs">--</div>
+    <div class="text-xs" style="color:var(--muted2)">peak activity periods</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+  <!-- Frequent objects -->
+  <div class="card p-4">
+    <div class="text-sm font-medium mb-3">Top Obstacles</div>
+    <div id="r-freq" class="space-y-2">
+      <p class="text-xs" style="color:var(--muted)">Loading…</p>
+    </div>
+  </div>
+
+  <!-- Severity distribution -->
+  <div class="card p-4">
+    <div class="text-sm font-medium mb-3">Severity Distribution</div>
+    <div id="r-sev" class="space-y-3">
+      <p class="text-xs" style="color:var(--muted)">Loading…</p>
+    </div>
+  </div>
+
+  <!-- Caregiver recommendations -->
+  <div class="card p-4">
+    <div class="text-sm font-medium mb-3">Caregiver Recommendations</div>
+    <div id="r-recs" class="space-y-2">
+      <p class="text-xs" style="color:var(--muted)">Loading…</p>
+    </div>
+  </div>
+</div>
+
+<!-- Hourly pattern -->
+<div class="card p-4 mb-4">
+  <div class="text-sm font-medium mb-3">Hourly Activity Pattern</div>
+  <div id="r-hourly" class="grid grid-cols-12 gap-1">
+    <p class="text-xs col-span-12" style="color:var(--muted)">Loading…</p>
+  </div>
+  <div class="flex gap-4 mt-3">
+    <div class="flex items-center gap-1.5">
+      <div class="w-2 h-2 rounded-full" style="background:var(--accent)"></div>
+      <span class="text-xs" style="color:var(--muted)">Low activity</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <div class="w-2 h-2 rounded-full" style="background:#FACC15"></div>
+      <span class="text-xs" style="color:var(--muted)">Medium activity</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <div class="w-2 h-2 rounded-full" style="background:#F87171"></div>
+      <span class="text-xs" style="color:var(--muted)">High activity (risk)</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let reportData = null;
+
+  async function loadReport() {
+    document.getElementById('r-total').textContent = '…';
+    try {
+      const res = await fetch('/api/report/');
+      const data = await res.json();
+      reportData = data;
+      renderReport(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderReport(data) {
+    const a = data.analysis;
+    if (a.message) {
+      ['r-total', 'r-unique', 'r-risk', 'r-hrs'].forEach(id => document.getElementById(id).textContent = '--');
+      document.getElementById('r-freq').innerHTML = '<p class="text-xs" style="color:var(--muted)">Not enough data yet — keep the device running to collect detection history.</p>';
+      return;
+    }
+
+    document.getElementById('r-total').textContent = a.total_detections;
+    document.getElementById('r-unique').textContent = a.unique_objects;
+    document.getElementById('r-risk').textContent = a.risk_score;
+    document.getElementById('r-hrs').textContent = a.high_risk_hours?.length || 0;
+
+    const riskLbl = a.risk_score > 3 ? 'HIGH RISK' : a.risk_score > 2 ? 'MODERATE' : 'LOW RISK';
+    const riskCol = a.risk_score > 3 ? '#F87171' : a.risk_score > 2 ? '#FACC15' : 'var(--accent)';
+    document.getElementById('r-risk-label').textContent = riskLbl;
+    document.getElementById('r-risk').style.color = riskCol;
+
+    // Frequent objects
+    const maxC = a.frequent_objects[0]?.count || 1;
+    document.getElementById('r-freq').innerHTML = a.frequent_objects.map(o => {
+      const pct = Math.round(o.count / maxC * 100);
+      return `
+      <div class="flex items-center gap-2">
+        <div class="text-xs w-28 truncate" style="color:var(--text)">${o.object}</div>
+        <div class="flex-1 prog-track"><div class="prog-fill" style="width:${pct}%;background:#FACC15"></div></div>
+        <div class="mono text-xs w-6 text-right" style="color:var(--muted)">${o.count}</div>
+      </div>`;
+    }).join('') || '<p class="text-xs" style="color:var(--muted)">No data</p>';
+
+    // Severity distribution
+    const sevD = a.severity_distribution || {};
+    const sevTotal = Object.values(sevD).reduce((a, b) => a + b, 0) || 1;
+    const sevItems = [{ l: 'Critical', k: 4, c: '#F87171' }, { l: 'High', k: 3, c: '#FB923C' },
+    { l: 'Medium', k: 2, c: '#FACC15' }, { l: 'Low', k: 1, c: '#94A3B8' }];
+    document.getElementById('r-sev').innerHTML = sevItems.map(i => {
+      const cnt = sevD[i.k] || 0;
+      const pct = Math.round(cnt / sevTotal * 100);
+      return `
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span style="color:var(--muted)">${i.l}</span>
+          <span class="mono" style="color:${i.c}">${cnt} (${pct}%)</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${i.c}"></div></div>
+      </div>`;
+    }).join('');
+
+    // Recommendations
+    document.getElementById('r-recs').innerHTML = (data.recommendations || []).map(r => {
+      const pColor = r.priority === 'high' ? '#F87171' : r.priority === 'medium' ? '#FACC15' : 'var(--accent)';
+      return `
+      <div class="card2 p-2.5">
+        <div class="flex items-start gap-2">
+          <span class="pill mt-0.5" style="background:rgba(85,96,112,.2);color:${pColor};border:1px solid rgba(85,96,112,.3);font-size:9px">${r.priority.toUpperCase()}</span>
+          <p class="text-xs leading-relaxed" style="color:var(--text)">${r.message}</p>
+        </div>
+      </div>`;
+    }).join('') || '<p class="text-xs" style="color:var(--muted)">No recommendations yet</p>';
+
+    // Hourly heatmap
+    const hourly = a.hourly_pattern || {};
+    const maxH = Math.max(...Object.values(hourly), 1);
+    const avgH = Object.values(hourly).reduce((a, b) => a + b, 0) / Math.max(Object.keys(hourly).length, 1);
+    document.getElementById('r-hourly').innerHTML = Array.from({ length: 24 }, (_, h) => {
+      const cnt = hourly[h] || 0;
+      const pct = Math.round(cnt / maxH * 100);
+      const color = cnt > avgH * 1.5 ? '#F87171' : cnt > avgH ? '#FACC15' : 'var(--accent)';
+      return `
+      <div class="flex flex-col items-center gap-1">
+        <div class="w-full rounded" style="height:${Math.max(4, pct * 0.4 + 4)}px;background:${cnt > 0 ? color : 'var(--surface3)'}"></div>
+        <span class="mono text-xs" style="color:var(--muted2);font-size:9px">${h}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Add to your existing JavaScript
+  function downloadPDF() {
+    window.location.href = '/api/report/pdf/';
+  }
+
+  function exportReport() {
+    if (!reportData) return;
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `smartglass_report_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  }
+
+  loadReport();
+</script>
+{% endblock %}
