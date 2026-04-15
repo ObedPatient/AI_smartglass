@@ -1,15 +1,39 @@
+
+# Environment files
 .env
-__pycache__/
-*.py[cod]
-*.pyo
-db.sqlite3
-yolo_models/*.pt
-media/
-staticfiles/
+.venv
+env/
 venv/
-.venv/
-*.egg-info/
-dist/
-build/
-.DS_Store
+ENV/
+env.bak/
+venv.bak/
+
+# Database
+db.sqlite3
+*.db
+
+# Django
+staticfiles/
+media/
 *.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+
+# YOLO models (large files)
+yolo_models/*.pt
+*.pt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+smartglass_project.zip

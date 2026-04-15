@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url  
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -52,12 +54,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'smart_glass.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME':   BASE_DIR / 'db.sqlite3',
+# ─── DATABASE CONFIGURATION (UPDATED) ─────────────────────────────────
+# Automatically uses DATABASE_URL from environment if available (Render)
+# Falls back to SQLite for local development
+
+if os.environ.get('DATABASE_URL'):
+    # Production: Use PostgreSQL on Render
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            ssl_require=True  # Required for Render PostgreSQL
+        )
     }
-}
+else:
+    # Local development: Use SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME':   BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -71,9 +88,14 @@ TIME_ZONE     = 'Africa/Kigali'
 USE_I18N      = True
 USE_TZ        = True
 
+# ─── STATIC FILES CONFIGURATION (UPDATED) ─────────────────────────────
 STATIC_URL       = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT      = BASE_DIR / 'staticfiles'
+
+# Whitenoise configuration for production static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL        = '/media/'
 MEDIA_ROOT       = BASE_DIR / 'media'
 
@@ -84,7 +106,14 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # ── CORS ──────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = True
+# In production, you should restrict this to your actual domains
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        'https://ai-smartglass.onrender.com',
+        'https://*.onrender.com',
+    ]
 
 # ── YOLO ENSEMBLE ─────────────────────────────────────────────────────
 YOLO_MODELS_DIR      = BASE_DIR / 'yolo_models'
@@ -106,6 +135,21 @@ MISTRAL_API_KEY = os.environ.get('MISTRAL_API_KEY', '')
 
 # How often the AI agent runs — 15s stays well within free tier limits
 AGENT_INTERVAL_SECONDS = 15
+
+# ── SECURITY SETTINGS FOR PRODUCTION ─────────────────────────────────
+if not DEBUG:
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # ── LOGGING ───────────────────────────────────────────────────────────
 LOGGING = {
