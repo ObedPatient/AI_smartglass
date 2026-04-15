@@ -1,0 +1,14 @@
+Django
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+python-decouple
+django-cors-headers
+ultralytics
+opencv-python-headless
+pillow
+numpy
+google-generativeai
+requests
+python-dotenv
